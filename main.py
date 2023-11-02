@@ -61,12 +61,12 @@ class EarlyStopping:
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 criterion = nn.MSELoss()
-model = AnomalyTransformer(win_size=20, enc_in=24, c_out=24, e_layers=3)
+model = AnomalyTransformer(win_size=50, enc_in=24, c_out=24, e_layers=3)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 if torch.cuda.is_available():
     model.cuda()
 
-train_loader = get_loader_segment(batch_size=256, mode='train')
+train_loader = get_loader_segment(batch_size=128, mode='train')
 
 
 def train():
@@ -120,19 +120,24 @@ def train():
         plt.xlabel('steps', fontsize=20)
         plt.ylabel('Train loss', fontsize=20)
         plt.grid()
-        plt.savefig("./Train_loss.png")
+        plt.savefig("./Train_loss_1.png")
         plt.show()
 
     draw_loss(loss1_list, num_epochs)
 
 
 train()
+# 保存参数
+torch.save(model.state_dict(),'params_win_50.pth')
 print("==================================series===============================")
 
-# print(type(s)) list
-print(s)
-sns.set(context='notebook',font='simhei',style='whitegrid')
-# 设置风格尺度和显示中文
-
-sns.displot(data=s[0] ,kind='kde')
+print("s.len:{}".format(len(s)))
+print("s[-1].shape:{}".format(s[-1].shape))
+print(s[1])
+sns.set(style='whitegrid', color_codes=True)
+t = s[1]
+# 不用再转了，他本来就是array
+print("t.tyepe:{}".format(type(t)))
+ax = sns.heatmap(t)
 plt.show()
+

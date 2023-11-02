@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from Attn import AnomalyAttention, AttentionLayer
 from embed import DataEmbedding, TokenEmbedding
 
@@ -47,6 +46,12 @@ class Encoder(nn.Module):
         sigma_list = []
         for attn_layer in self.attn_layers:
             x, series, prior, sigma = attn_layer(x, attn_mask=attn_mask)
+            # print(type(series))
+            # print(series.shape)
+            t = series.detach().numpy()
+            t_r = t.reshape(-1, 50, 50)
+            # print("t_r reshape后的尺寸：{}".format(t_r[-1].shape)) 20*20
+            s.append(t_r[0])
             series_list.append(series)
             prior_list.append(prior)
             sigma_list.append(sigma)
@@ -90,7 +95,7 @@ class AnomalyTransformer(nn.Module):
         enc_out = self.projection(enc_out)
 
         if self.output_attention:
-            s.append(series)
+
             return enc_out, series, prior, sigmas
         else:
             return enc_out  # [B, L, D]
