@@ -6,7 +6,7 @@ from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
-data_path = "F:\Challenge_Data"
+data_path = "./data"
 train_df = pd.read_csv(data_path + '/train.txt', sep=" ", header=None)
 train_df.drop(train_df.columns[[26, 27]], axis=1, inplace=True)
 #  print(train_df.shape) (45918,26)

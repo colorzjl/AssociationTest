@@ -31,6 +31,7 @@ class EncoderLayer(nn.Module):
 
 
 s = []
+p = []
 
 
 class Encoder(nn.Module):
@@ -48,10 +49,13 @@ class Encoder(nn.Module):
             x, series, prior, sigma = attn_layer(x, attn_mask=attn_mask)
             # print(type(series))
             # print(series.shape)
-            t = series.detach().numpy()
+            t = series.detach().cpu().numpy()
             t_r = t.reshape(-1, 50, 50)
             # print("t_r reshape后的尺寸：{}".format(t_r[-1].shape)) 20*20
             s.append(t_r[0])
+            pri = prior.detach().cpu().numpy()
+            pri_r = pri.reshape(-1, 50, 50)
+            p.append(pri_r[0])
             series_list.append(series)
             prior_list.append(prior)
             sigma_list.append(sigma)

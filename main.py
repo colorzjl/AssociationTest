@@ -5,10 +5,15 @@ import numpy as np
 import os
 import time
 import pandas as pd
-from model import AnomalyTransformer, s
+from model import AnomalyTransformer, s, p
 from data_loader2 import train, test, get_loader_segment
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+
+def my_kl_loss(p, q):
+    res = p * (torch.log(p + 0.0001) - torch.log(q + 0.0001))
+    return torch.mean(torch.sum(res, dim=-1), dim=1)
 
 
 def adjust_learning_rate(optimizer, epoch, lr_):
@@ -74,10 +79,12 @@ def train():
     训练
     :return:
     '''
+    win_size = 50
+    k = 3
     time_now = time.time()
     early_stopping = EarlyStopping(patience=3, verbose=True, dataset_name=train)
     train_steps = len(train_loader)
-    num_epochs = 2
+    num_epochs = 5
     loss1_list = []
     df = pd.DataFrame(columns=['Epoch', 'train_loss'])
     for epoch in range(num_epochs):
@@ -85,20 +92,44 @@ def train():
         epoch_time = time.time()
         model.train()
         for i, input_data in enumerate(train_loader):
+            # print("在跑了在跑了")
             optimizer.zero_grad()
             iter_count += 1
             input = input_data.float().to(device)
 
             output, series, prior, _ = model(input)
+            # calculate Association discrepancy
+            series_loss = 0.0
+            prior_loss = 0.0
+            for u in range(len(prior)):
+                series_loss += (torch.mean(my_kl_loss(series[u], (
+                        prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                               win_size)).detach())) + torch.mean(
+                    my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                       win_size)).detach(),
+                               series[u])))
+                prior_loss += (torch.mean(my_kl_loss(
+                    (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                            win_size)),
+                    series[u].detach())) + torch.mean(
+                    my_kl_loss(series[u].detach(), (
+                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                   win_size)))))
+            series_loss = series_loss / len(prior)
+            prior_loss = prior_loss / len(prior)
+
             rec_loss = criterion(output, input)
-            loss1_list.append(rec_loss.item())
+            loss1_list.append((rec_loss - k * series_loss).item())
+            loss1 = rec_loss - k * series_loss
+            loss2 = rec_loss + k * prior_loss
             if (i + 1) % 100 == 0:
                 speed = (time.time() - time_now) / iter_count
                 left_time = speed * ((num_epochs - epoch) * train_steps - i)
                 print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
                 iter_count = 0
                 time_now = time.time()
-            rec_loss.backward()
+            loss1.backward(retain_graph=True)
+            loss2.backward()
             optimizer.step()
         print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
         train_loss = np.average(loss1_list)
@@ -120,7 +151,6 @@ def train():
         plt.xlabel('steps', fontsize=20)
         plt.ylabel('Train loss', fontsize=20)
         plt.grid()
-        plt.savefig("./Train_loss_1.png")
         plt.show()
 
     draw_loss(loss1_list, num_epochs)
@@ -128,16 +158,24 @@ def train():
 
 train()
 # 保存参数
-torch.save(model.state_dict(),'params_win_50.pth')
+torch.save(model.state_dict(), 'params_win_50.pth')
 print("==================================series===============================")
 
-print("s.len:{}".format(len(s)))
-print("s[-1].shape:{}".format(s[-1].shape))
-print(s[1])
+# print("s.len:{}".format(len(s)))
+# print("s[-1].shape:{}".format(s[-1].shape))
+# print(s[1])
 sns.set(style='whitegrid', color_codes=True)
-t = s[1]
+t = np.mean(s,axis=0)
 # 不用再转了，他本来就是array
-print("t.tyepe:{}".format(type(t)))
+# print("t.tyepe:{}".format(type(t)))
 ax = sns.heatmap(t)
+plt.plot()
 plt.show()
 
+# print("pri.len:{}".format(len(p)))
+# print("shape of pri:{}".format(p[-1].shape))
+sns.set(style='whitegrid', color_codes=True)
+pri = np.mean(p,axis=0)
+ax = sns.heatmap(pri)
+plt.plot()
+plt.show()

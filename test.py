@@ -31,24 +31,3 @@ def test():
 
 
 test()
-
-print("s.len:{}".format(len(s)))
-print("s[1].shape:{}".format(s[-1].shape))
-print(s[1])
-sns.set(style='whitegrid', color_codes=True)
-t = s[1]
-t1 = s[10]
-t2 = s[50]
-t3 = s[100]
-# 不用再转了，他本来就是array
-print("t.tyepe:{}".format(type(t)))
-
-
-ax = sns.heatmap(t)
-plt.show()
-ax1 = sns.heatmap(t1)
-plt.show()
-ax2 = sns.heatmap(t2)
-plt.show()
-ax3 = sns.heatmap(t3)
-plt.show()
