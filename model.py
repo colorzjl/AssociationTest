@@ -1,8 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
+
 from Attn import AnomalyAttention, AttentionLayer
-from embed import DataEmbedding, TokenEmbedding
+from embed import DataEmbedding
 
 
 class EncoderLayer(nn.Module):
@@ -49,13 +51,24 @@ class Encoder(nn.Module):
             x, series, prior, sigma = attn_layer(x, attn_mask=attn_mask)
             # print(type(series))
             # print(series.shape)
+            '''
             t = series.detach().cpu().numpy()
-            t_r = t.reshape(-1, 50, 50)
-            # print("t_r reshape后的尺寸：{}".format(t_r[-1].shape)) 20*20
-            s.append(t_r[0])
+            t_r = t.reshape(-1, 100, 100)
+            # print(np.mean(t_r, axis=0).shape)
+            s.append(np.mean(t_r, axis=0))
             pri = prior.detach().cpu().numpy()
-            pri_r = pri.reshape(-1, 50, 50)
-            p.append(pri_r[0])
+            pri_r = pri.reshape(-1, 100, 100)
+            p.append(np.mean(pri_r, axis=0))
+            '''
+            t = series.detach().cpu().numpy()
+            # print("t.shape",t.shape) 128,8,100,100
+            t_head_sum = np.mean(t[0], axis=0)
+            s.append(t_head_sum)
+
+            pri = prior.detach().cpu().numpy()
+            pri_r = pri.reshape(-1, 100, 100)
+            pri_head_sum = np.mean(pri[0], axis=0)
+            p.append(pri_head_sum)
             series_list.append(series)
             prior_list.append(prior)
             sigma_list.append(sigma)

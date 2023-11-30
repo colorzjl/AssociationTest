@@ -11,7 +11,8 @@ data_path = "./dataset"
 
 train_file_list = getfilelist(data_path + "/train_featuredata")
 train_file_list.sort(key=lambda x: int(x.split('_')[-1][:-5]))
-
+test_file_list = getfilelist(data_path + "/test_featuredata")
+test_file_list.sort(key=lambda x: int(x.split('_')[-1][:-5]))
 
 # print(file_list) 每一个列表是一个设备全寿命数据,存的是路径
 # print(len(file_list)) 27
@@ -38,15 +39,22 @@ def gen_sequence(file, win_size=100):
     length = train_df_sub.shape[0]
     if length >= win_size:
         for start, stop in zip(range(0, length - win_size), range(win_size, length)):
-            yield train_df_sub_norm[start:stop,:]
+            yield train_df_sub_norm[start:stop, :]
     else:
         yield []
 
 
-data = list(gen_sequence(file) for file in train_file_list)
-print(len(list(data[0])))
-data_array = np.concatenate(data).astype(np.float32)
-print(data_array.shape)
+data = list(list(gen_sequence(file)) for file in train_file_list)
+test_data = list(list(gen_sequence(file)) for file in test_file_list)
+
+# print(len(data)) 27
+# print(len(data[0])) 1029
+seq = np.concatenate(data).astype(np.float32)
+print(seq.shape)
+train = seq
+
+test_seq = np.concatenate(test_data).astype(np.float32)
+test = test_seq
 
 
 def get_loader_segment(batch_size, win_size=100, step=1, mode='tarin'):

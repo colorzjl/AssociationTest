@@ -6,7 +6,8 @@ import os
 import time
 import pandas as pd
 from model import AnomalyTransformer, s, p
-from data_loader2 import train, test, get_loader_segment
+# from data_loader2 import train, test, get_loader_segment
+from data_loder_switch import train, test, get_loader_segment
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -66,7 +67,7 @@ class EarlyStopping:
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 criterion = nn.MSELoss()
-model = AnomalyTransformer(win_size=50, enc_in=24, c_out=24, e_layers=3)
+model = AnomalyTransformer(win_size=100, enc_in=20, c_out=20, e_layers=3)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 if torch.cuda.is_available():
     model.cuda()
@@ -79,12 +80,12 @@ def train():
     训练
     :return:
     '''
-    win_size = 50
+    win_size = 100
     k = 3
     time_now = time.time()
     early_stopping = EarlyStopping(patience=3, verbose=True, dataset_name=train)
     train_steps = len(train_loader)
-    num_epochs = 5
+    num_epochs = 3
     loss1_list = []
     df = pd.DataFrame(columns=['Epoch', 'train_loss'])
     for epoch in range(num_epochs):
@@ -158,24 +159,27 @@ def train():
 
 train()
 # 保存参数
-torch.save(model.state_dict(), 'params_win_50.pth')
-print("==================================series===============================")
+# torch.save(model.state_dict(), 'params_win_50.pth')
+print("===================================================================")
 
 # print("s.len:{}".format(len(s)))
-# print("s[-1].shape:{}".format(s[-1].shape))
+# print("pri.len:{}".format(len(p)))
+# print("s[0].shape:{}".format(s[0].shape))
+# print("p[0].shape:{}".format(p[0].shape))
 # print(s[1])
 sns.set(style='whitegrid', color_codes=True)
-t = np.mean(s,axis=0)
+t = np.mean(s, axis=0)
 # 不用再转了，他本来就是array
-# print("t.tyepe:{}".format(type(t)))
-ax = sns.heatmap(t)
+print("t.type:{}".format(type(t)))
+print("t.shape:{}".format(t.shape))
+ax = sns.heatmap(t,cmap="Greens")
 plt.plot()
 plt.show()
 
 # print("pri.len:{}".format(len(p)))
 # print("shape of pri:{}".format(p[-1].shape))
 sns.set(style='whitegrid', color_codes=True)
-pri = np.mean(p,axis=0)
-ax = sns.heatmap(pri)
+pri = np.mean(p, axis=0)
+ax = sns.heatmap(pri,cmap="Greens")
 plt.plot()
 plt.show()
